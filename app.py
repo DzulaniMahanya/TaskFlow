@@ -2,25 +2,47 @@ import os
 from flask import Flask, render_template, redirect, request
 from flask_scss import Scss
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
+from flask_migrate import Migrate
+from dotenv import load_dotenv
+
+#load environment variables
+load_dotenv()
 
 #App setup
 app = Flask(__name__)
 Scss(app)
 
+
+#debugging print statement
+print("DATABASE_URL:", os.environ.get("DATABASE_URL"))
+
+#configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
 app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
 db = SQLAlchemy(app)
+
+#initialize database migration
+migrate = Migrate(app, db)
 
 # Data Class -> Row of data
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(100), nullable=False)
-    complete = db.Column(db.Integer, default=0)
+    complete = db.Column(db.Boolean, default=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime, default=lambda: datetime.utcnow() + timedelta(days=3))
+    status = db.Column(db.String(20), default="In Progress")
 
     def __repr__(self) -> str:
         return f"Task {self.id}"
+    def update_status(self):
+        if self.complete:
+            self.status = "Completed"
+        elif datetime.utcnow() > self.due_date:
+            self.status = "Incomplete"
+        else:
+            self.status = "In Progress"
 
 with app.app_context():
         db.create_all()
