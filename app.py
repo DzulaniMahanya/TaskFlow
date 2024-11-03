@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 
-#load environment variables
 load_dotenv()
 
 #App setup
